@@ -4,13 +4,16 @@ import MainLayout from "../layout/MainLayout.vue";
 
 import DashboardView from "../views/AppDashboardView.vue";
 
-import ProductView from "../views/ProductView.vue";
+import BrandsView from "../views/BrandsView.vue";
 
 import CategoryView from "../views/CategoryView.vue"; 
+
+import ProductView from "../views/ProductView.vue";
 
 import SupplierView from "../views/SupplierView.vue";
 
 import PurchaseView from "../views/PurchaseView.vue";
+
 
 const router = createRouter({
     history: createWebHistory(),
@@ -26,15 +29,17 @@ const router = createRouter({
                     path: "",
                     component: DashboardView,
                 },
-
                 {
-                    path: "products",
-                    component: ProductView,
+                    path: "brands",
+                    component: BrandsView,
                 },
-
                 {
                     path: "categories",
                     component: CategoryView,
+                },
+                {
+                    path: "products",
+                    component: ProductView,
                 },
                 {
                     path: "suppliers",

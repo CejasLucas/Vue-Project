@@ -7,5 +7,11 @@ export interface Supplier{
 
     phone: string;
 
+    address: string;
+    
+    locality: string;
+
+    nationality: string;
+
     tax_id: string;
 }
