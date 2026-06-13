@@ -3,28 +3,111 @@ import { ref, onMounted } from "vue";
 import { brandApi } from "../api/BrandApi";
 import type { Brand } from "../types/brand";
 
+const showModal = ref(false);
+const isEditing = ref(false);
+const saving = ref(false);
+const deleting = ref(false);
+const deleteId = ref<string | null>(null);
+
+const emptyForm = (): Omit<Brand, "id"> => ({
+  name: "",
+  nationality: "",
+  active: true,
+});
+
+const form = ref(emptyForm());
+const editingId = ref<string | null>(null);
+
 const brands = ref<Brand[]>([]);
 const loading = ref(true);
 
 onMounted(async () => {
+  await loadBrands();
+});
+
+async function loadBrands() {
+  loading.value = true;
   try {
     const response = await brandApi.getAll();
     brands.value = response.data;
-  } catch (error) {
-    console.error("Error loading brands:", error);
   } finally {
     loading.value = false;
   }
-});
+};
+
+function openCreate() {
+  form.value = emptyForm();
+  editingId.value = null;
+  isEditing.value = false;
+  showModal.value = true;
+}
+
+function openEdit(brand: Brand) {
+  form.value = {
+    name: brand.name,
+    nationality: brand.nationality ?? "",
+    active: brand.active,
+  };
+
+  editingId.value = String(brand.id);
+  isEditing.value = true;
+  showModal.value = true;
+}
+
+function closeModal() {
+  showModal.value = false;
+}
+
+async function saveBrand() {
+  saving.value = true;
+
+  try {
+    if (isEditing.value && editingId.value) {
+      await brandApi.update(editingId.value, form.value);
+    } else {
+      await brandApi.create(form.value);
+    }
+
+    await loadBrands();
+    closeModal();
+  } finally {
+    saving.value = false;
+  }
+}
+
+function confirmDelete(id: string) {
+  deleteId.value = id;
+}
+
+async function doDelete() {
+  if (!deleteId.value) return;
+
+  deleting.value = true;
+
+  try {
+    await brandApi.remove(deleteId.value);
+    await loadBrands();
+    deleteId.value = null;
+  } finally {
+    deleting.value = false;
+  }
+}
+
 </script>
 
 <template>
   <div class="page">
+    <!--Empty State-->
     <div class="page-header">
       <div>
         <h1 class="page-title">Brands</h1>
         <p class="page-sub">{{ brands.length }} registered brands</p>
       </div>
+
+      <button class="btn-primary" @click="openCreate">
+        <i class="ti ti-plus" />
+        Add brand
+      </button>
     </div>
 
     <div class="table-card">
@@ -42,29 +125,32 @@ onMounted(async () => {
       <!-- Table -->
       <div v-else class="table-wrap">
         <table class="data-table">
+          <!-- Table Titles -->
           <thead>
             <tr>
-              <th style="width: 50px">#</th>
-              <th style="width: 200px">Name</th>
-              <th style="width: 200px">Nationality</th>
-              <th style="width: 150px">Status</th>
+              <th class="text-left table-header" style="width: 60px">#</th>
+              <th class="text-left table-header" style="width: 160px">NAME</th>
+              <th class="text-left table-header" style="width: 200px">NATIONALITY</th>
+              <th class="text-left table-header" style="width: 150px">STATUS</th>
+              <th class="text-center table-header" style="width: 100px">OPERATIONS</th>
             </tr>
           </thead>
-
+          
+          <!-- Table Content -->
           <tbody>
             <tr v-for="(brand, index) in brands" :key="brand.id">
-              <td class="mono muted">
+              <td class="mono muted table-content-index">
                 {{ index + 1 }}
               </td>
 
               <td>
-                <div class="brand-name">
-                  <span class="brand-dot" />
+                <div class="name table-content-name">
+                  <span class="dot" />
                   {{ brand.name }}
                 </div>
               </td>
 
-              <td class="muted">
+              <td class="muted table-content">
                 {{ brand.nationality }}
               </td>
 
@@ -77,126 +163,185 @@ onMounted(async () => {
                   {{ brand.active ? "Active" : "Inactive" }}
                 </span>
               </td>
+              
+              <!--Button Actions-->
+              <td>
+                <div class="row-actions">
+                  <button
+                    class="icon-btn"
+                    title="Edit"
+                    @click="openEdit(brand)"
+                  >
+                    <i class="ti ti-edit" />
+                  </button>
+
+                  <button
+                    class="icon-btn danger"
+                    title="Delete"
+                    @click="confirmDelete(String(brand.id))"
+                  >
+                    <i class="ti ti-trash" />
+                  </button>
+                </div>
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
+
+    <!--Modal Edit-->
+    <Teleport to="body">
+      <div
+        v-if="showModal"
+        class="overlay"
+        @click.self="closeModal"
+      >
+        <div class="modal">
+
+          <div class="modal-header">
+            <h2 class="modal-title">
+              {{ isEditing ? "Edit brand" : "New brand" }}
+            </h2>
+
+            <button class="icon-btn" @click="closeModal">
+              <i class="ti ti-x" />
+            </button>
+          </div>
+
+          <div class="modal-body">
+            <div class="field-grid">
+
+              <div class="field">
+                <label>Name *</label>
+                <input
+                  v-model="form.name"
+                  placeholder="Brand name"
+                />
+              </div>
+
+              <div class="field">
+                <label>Nationality</label>
+                <input
+                  v-model="form.nationality"
+                  placeholder="Argentina"
+                />
+              </div>
+
+              <div class="field full">
+                <label>Status</label>
+
+                <button
+                  type="button"
+                  class="toggle"
+                  :class="{ active: form.active }"
+                  @click="form.active = !form.active"
+                >
+                  <span class="toggle-track">
+                    <span class="toggle-thumb" />
+                  </span>
+
+                  <span class="toggle-label">
+                    {{ form.active ? "Active" : "Inactive" }}
+                  </span>
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button
+              class="btn-ghost"
+              @click="closeModal"
+            >
+              Cancel
+            </button>
+
+            <button
+              class="btn-primary"
+              @click="saveBrand"
+              :disabled="saving || !form.name.trim()"
+            >
+              <i
+                v-if="saving"
+                class="ti ti-loader-2 spin"
+              />
+
+              {{
+                saving
+                  ? "Saving..."
+                  : isEditing
+                  ? "Save changes"
+                  : "Create brand"
+              }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+    
+    <!--Modal Delete-->
+    <Teleport to="body">
+      <div
+        v-if="deleteId"
+        class="overlay"
+        @click.self="deleteId = null"
+      >
+        <div class="modal modal--sm">
+
+          <div class="modal-header">
+            <h2 class="modal-title">
+              Delete brand?
+            </h2>
+          </div>
+
+          <div class="modal-body">
+            <p class="confirm-text">
+              This action is permanent and cannot be undone.
+            </p>
+          </div>
+
+          <div class="modal-footer">
+            <button
+              class="btn-ghost"
+              @click="deleteId = null"
+            >
+              Cancel
+            </button>
+
+            <button
+              class="btn-danger"
+              @click="doDelete"
+              :disabled="deleting"
+            >
+              <i
+                v-if="deleting"
+                class="ti ti-loader-2 spin"
+              />
+
+              {{
+                deleting
+                  ? "Deleting..."
+                  : "Yes, delete"
+              }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <style scoped>
-.page {
-  padding: 1.25rem 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-/* Header */
-.page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-}
-
-.page-title {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: var(--text-h);
-  margin: 0 0 2px;
-}
-
-.page-sub {
-  font-size: 0.75rem;
-  color: var(--text);
-  margin: 0;
-}
-
-/* Card */
-.table-card {
-  background: var(--code-bg);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-/* Scroll */
-.table-wrap {
-  overflow-x: auto;
-  overflow-y: visible;
-}
-
-/* Table */
-.data-table {
-  width: 100%;
-  min-width: 650px;
-  border-collapse: collapse;
-  font-size: 0.82rem;
-  table-layout: fixed;
-}
-
-.data-table th {
-  padding: 10px 1.1rem;
-  color: var(--text);
-  font-weight: 600;
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  border-bottom: 1px solid var(--border);
-  white-space: nowrap;
-  background: var(--code-bg);
-  position: sticky;
-  top: 0;
-  z-index: 1;
-}
-
-.data-table td {
-  padding: 5px 1.1rem;
-  color: var(--text-h);
-  border-bottom: 1px solid var(--border);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.data-table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.data-table tbody tr {
-  transition: all 0.15s ease;
-}
-
-.data-table tbody tr:hover td {
-  background: rgba(55, 138, 221, 0.05);
-}
-
-/* Brand Name */
-.brand-name {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  font-weight: 500;
-}
-
-.brand-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #378add;
-  flex-shrink: 0;
-  box-shadow: 0 0 0 4px rgba(55, 138, 221, 0.12);
-}
-
 /* Status Badge */
 .status-badge {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  padding: 4px 15px;
+  padding: 5.5px 15px;
   border-radius: 999px;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.01em;
 }
@@ -231,46 +376,58 @@ onMounted(async () => {
   box-shadow: 0 0 6px rgba(239, 68, 68, 0.5);
 }
 
-/* Utilities */
-.mono {
-  font-family: var(--mono);
-  font-size: 0.72rem;
-}
-
-.muted {
-  color: var(--text);
-}
-
-/* Empty State */
-.empty {
-  padding: 3rem 1rem;
-  text-align: center;
-  color: var(--text);
-}
-
-.empty i {
-  font-size: 2.2rem;
-  margin-bottom: 0.75rem;
-  display: block;
-  opacity: 0.7;
-}
-
-.empty p {
+.confirm-text {
   font-size: 0.85rem;
+  color: var(--text);
   margin: 0;
+  line-height: 1.5;
 }
 
-/* Skeleton */
-.skel {
-  background: var(--border);
-  border-radius: 4px;
-  animation: pulse 1.4s ease-in-out infinite;
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
 }
 
-.row-skel {
-  height: 42px;
-  margin: 6px 1rem;
-  border-radius: 6px;
+.toggle-track {
+  width: 52px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.25);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.toggle-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: white;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.toggle.active .toggle-track {
+  background: rgba(34, 197, 94, 0.25);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.toggle.active .toggle-thumb {
+  transform: translateX(24px);
+}
+
+.toggle-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-h);
 }
 
 @keyframes pulse {

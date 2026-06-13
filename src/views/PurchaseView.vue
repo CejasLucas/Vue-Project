@@ -2,15 +2,35 @@
 import { ref, onMounted } from "vue";
 import { purchaseApi } from "../api/PurchaseApi";
 import type { Purchase } from "../types/purchase";
+import type { PurchaseDetail } from "../types/purchaseDetails";
+
+
+const loading = ref(true);
+const showDetails = ref(false);
+const loadingDetails = ref(false);
 
 const purchases = ref<Purchase[]>([]);
-const loading = ref(true);
+const purchaseDetail = ref<PurchaseDetail | null>(null);
+
 
 onMounted(async () => {
   const response = await purchaseApi.getAll();
   purchases.value = response.data;
   loading.value = false;
 });
+
+
+async function openDetails(id: string) {
+  loadingDetails.value = true;
+
+  try {
+    const response = await purchaseApi.getDetails(id);
+    purchaseDetail.value = response.data;
+    showDetails.value = true;
+  } finally {
+    loadingDetails.value = false;
+  }
+}
 
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString("en-US", {
@@ -33,43 +53,66 @@ function statusLabel(s: Status) {
 }
 </script>
 
+
 <template>
   <div class="page">
-
+    <!--Empty State-->
     <div class="page-header">
       <div>
         <h1 class="page-title">Purchases</h1>
         <p class="page-sub">{{ purchases.length }} registered purchases</p>
       </div>
+
+      <button class="btn-primary">
+        <i class="ti ti-plus" />
+        Add purchase
+      </button>
     </div>
 
+
     <div class="table-card">
+      <!-- Loading -->
       <div v-if="loading">
-        <div v-for="n in 6" :key="n" class="skel row-skel" />
+        <div v-for="n in 5" :key="n" class="skel row-skel" />
       </div>
 
+      <!-- Empty -->
       <div v-else-if="purchases.length === 0" class="empty">
         <i class="ti ti-shopping-cart" aria-hidden="true" />
         <p>No purchases found.</p>
       </div>
 
+      <!-- Table -->
       <div v-else class="table-wrap">
         <table class="data-table">
+          <!-- Table Titles -->
           <thead>
             <tr>
-              <th style="width: 50px">#</th>
-              <th style="width: 100px">Purchase ID</th>
-              <th style="width: 100px">Date</th>
-              <th style="width: 100px">Total</th>
-              <th class="text-center" style="width: 130px">Status</th>
+              <th class="text-left table-header" style="width: 50px">#</th>
+              <th class="text-left table-header" style="width: 100px">PURCHASE ID</th>
+              <th class="text-left table-header" style="width: 100px">DATE</th>
+              <th class="text-left table-header" style="width: 100px">TOTAL</th>
+              <th class="text-center table-header" style="width: 100px">STATUS</th>
+              <th class="text-left table-header" style="width: 100px">PURCHASE DETAILS</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="(purchase, index) in purchases" :key="purchase.id">
-              <td class="muted mono">{{ index + 1 }}</td>
-              <td class="mono purchase-id">#{{ purchase.id.slice(-6).toUpperCase() }}</td>
-              <td class="muted">{{ formatDate(purchase.purchase_date) }}</td>
-              <td class="mono amount">{{ formatAmount(purchase.total_amount) }}</td>
+              <td class="muted table-content-index">
+                {{ index + 1 }}
+              </td>
+              <td>
+                <div class="name table-content-name">
+                  <span class="dot"/>
+                  {{ purchase.id.slice(-6).toUpperCase() }}
+                </div>
+              </td>
+              <td class="muted table-content">
+                {{ formatDate(purchase.purchase_date) }}
+              </td>
+              <td class="mono amount table-content">
+                {{ formatAmount(purchase.total_amount) }}
+              </td>
               <td class="text-center">
                 <span
                   class="badge"
@@ -79,94 +122,101 @@ function statusLabel(s: Status) {
                   {{ statusLabel(purchase.status) }}
                 </span>
               </td>
+              <td>
+                <button
+                  class="details-link"
+                  @click="openDetails(purchase.id)"
+                >
+                  Details
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
 
+    <Teleport to="body">
+      <div
+        v-if="showDetails"
+        class="budget-modal-overlay"
+        @click.self="showDetails = false"
+      >
+        <div class="budget-modal">
+
+          <div class="budget-modal-header">
+            <h2 class="budget-modal-title">
+              Purchase Details
+            </h2>
+
+            <button
+              class="budget-modal-close-btn"
+              @click="showDetails = false"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div
+            v-if="purchaseDetail"
+            class="budget-modal-body"
+          >
+            <div class="budget-modal-info">
+              <div>
+                <strong>Purchase ID</strong>
+                {{ purchaseDetail.id.slice(-6).toUpperCase() }}
+              </div>
+
+              <div>
+                <strong>Date</strong>
+                {{ formatDate(purchaseDetail.purchase_date) }}
+              </div>
+
+              <div>
+                <strong>Status</strong>
+                {{ statusLabel(purchaseDetail.status) }}
+              </div>
+            </div>
+
+            <table class="budget-modal-table">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Qty</th>
+                  <th>Unit Price</th>
+                  <th>Subtotal</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr
+                  v-for="item in purchaseDetail.items"
+                  :key="item.product_id"
+                >
+                  <td>{{ item.product_name }}</td>
+                  <td>{{ item.quantity }}</td>
+                  <td>{{ formatAmount(item.unit_price) }}</td>
+                  <td>{{ formatAmount(item.subtotal) }}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="budget-modal-total">
+              <span>Total:</span>
+
+              <strong>
+                {{ formatAmount(purchaseDetail.total_amount) }}
+              </strong>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <style scoped>
-.page {
-  padding: 1.25rem 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-.page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-}
-.page-title {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: var(--text-h);
-  margin: 0 0 2px;
-}
-.page-sub {
-  font-size: 0.75rem;
-  color: var(--text);
-  margin: 0;
-}
-
-/* Table card */
-.table-card {
-  background: var(--code-bg);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.table-wrap {
-  overflow-x: auto;
-  overflow-y: visible;
-}
-
-.data-table {
-  width: 100%;
-  min-width: 520px;
-  border-collapse: collapse;
-  font-size: 0.82rem;
-  table-layout: fixed;
-}
-
-.data-table th {
-  padding: 10px 1.1rem;
-  color: var(--text);
-  font-weight: 500;
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  border-bottom: 1px solid var(--border);
-  white-space: nowrap;
-  background: var(--code-bg);
-  position: sticky;
-  top: 0;
-  z-index: 1;
-}
-
-.data-table td {
-  padding: 11px 1.1rem;
-  color: var(--text-h);
-  border-bottom: 1px solid var(--border);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.data-table tbody tr:last-child td { border-bottom: none; }
-.data-table tbody tr:hover td { background: rgba(55,138,221,0.04); }
-
-/* Purchase ID */
-.purchase-id {
-  color: #378ADD;
-  letter-spacing: 0.03em;
-}
-
 /* Amount */
 .amount {
   font-weight: 600;
@@ -197,27 +247,15 @@ function statusLabel(s: Status) {
 .badge-confirmed .badge-dot { background: #378ADD; }
 .badge-pending .badge-dot { background: #A855F7; }
 
-/* Utilities */
-.mono       { font-family: var(--mono); font-size: 0.75rem; }
-.muted      { color: var(--text); }
-.text-right  { text-align: right; }
-.text-center { text-align: center; }
-
-/* Empty */
-.empty {
-  padding: 3rem 1rem;
-  text-align: center;
-  color: var(--text);
+.details-link {
+  border: none;
+  background: transparent;
+  color: #378ADD;
+  cursor: pointer;
+  font-weight: 600;
 }
-.empty i { font-size: 2rem; margin-bottom: 0.5rem; display: block; }
-.empty p { font-size: 0.85rem; margin: 0; }
 
-/* Skeleton */
-.skel     { background: var(--border); border-radius: 4px; animation: pulse 1.4s ease-in-out infinite; }
-.row-skel { height: 38px; margin: 6px 1rem; border-radius: 6px; }
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.4; }
+.details-link:hover {
+  text-decoration: underline;
 }
 </style>

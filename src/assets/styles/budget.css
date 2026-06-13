@@ -1,0 +1,204 @@
+.budget-modal-overlay {
+  position: fixed;
+  inset: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 1.5rem;
+  z-index: 200;
+
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(6px);
+}
+
+.budget-modal {
+  width: 100%;
+  max-width: 920px;
+  max-height: 85vh;
+
+  overflow: hidden;
+  overflow-y: auto;
+
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.02);
+}
+
+/* HEADER */
+
+.budget-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 1.1rem 1.5rem;
+
+  border-bottom: 1px solid var(--border);
+}
+
+.budget-modal-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text);
+
+  letter-spacing: 0.2px;
+}
+
+.budget-modal-close-btn {
+  width: 36px;
+  height: 36px;
+
+  display: grid;
+  place-items: center;
+
+  border: none;
+  border-radius: 10px;
+
+  background: transparent;
+  color: var(--muted);
+
+  cursor: pointer;
+  transition: all .2s ease;
+}
+
+.budget-modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+}
+
+/* BODY */
+
+.budget-modal-body {
+  padding: 1.5rem;
+}
+
+/* PURCHASE INFO */
+
+.budget-modal-info {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+
+  margin-bottom: 1.75rem;
+}
+
+.budget-modal-info > div {
+  padding: 1rem;
+
+  border: 1px solid var(--border);
+  border-radius: 12px;
+
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.budget-modal-info strong {
+  display: block;
+
+  margin-bottom: .35rem;
+
+  font-size: .75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+
+  color: var(--muted);
+}
+
+/* TABLE */
+
+.budget-modal-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.budget-modal-table th {
+  padding: .9rem 1rem;
+
+  text-align: left;
+  font-size: .78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+
+  color: var(--muted);
+
+  border-bottom: 1px solid var(--border);
+}
+
+.budget-modal-table td {
+  padding: 1rem;
+
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+
+.budget-modal-table tbody tr {
+  transition: background-color .2s ease;
+}
+
+.budget-modal-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.budget-modal-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* NUMBERS */
+
+.budget-modal-table td:nth-child(2),
+.budget-modal-table td:nth-child(3),
+.budget-modal-table td:nth-child(4) {
+  font-variant-numeric: tabular-nums;
+}
+
+/* TOTAL */
+
+.budget-modal-total {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.budget-modal-total span {
+  margin-right: 1rem;
+  align-self: center;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.budget-modal-total strong {
+  padding: .5rem 1rem;
+
+  border: 1px solid var(--border);
+  border-radius: 12px;
+
+  background: rgba(255, 255, 255, 0.03);
+
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 768px) {
+  .budget-modal-info {
+    grid-template-columns: 1fr;
+  }
+
+  .budget-modal-body {
+    padding: 1rem;
+  }
+
+  .budget-modal-table {
+    font-size: .9rem;
+  }
+}

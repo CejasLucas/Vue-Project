@@ -1,0 +1,55 @@
+.name {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #378add;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 4px rgba(55, 138, 221, 0.12);
+}
+
+.mono {
+  font-family: var(--mono);
+}
+
+.muted {
+  color: var(--text);
+}
+
+.empty {
+  padding: 3rem 1rem;
+  text-align: center;
+  color: var(--text);
+}
+
+.skel {
+  background: var(--border);
+  border-radius: 4px;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.row-skel {
+  height: 42px;
+  margin: 6px 1rem;
+}
+
+.spin {
+  animation: spin .7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  50% {
+    opacity: .4;
+  }
+}

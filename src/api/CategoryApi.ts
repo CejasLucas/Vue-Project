@@ -10,4 +10,16 @@ export const categoryApi = {
     getById(id: string) {
         return http.get<Category>(`/categories/${id}`);
     },
+
+    create(data: Omit<Category, "id">) {
+        return http.post<Category>("/categories", data);
+    },
+
+    update(id: string, data: Partial<Category>) {
+        return http.put<Category>(`/categories/${id}`, data);
+    },
+    
+    remove(id: string) {
+        return http.delete(`/categories/${id}`);
+    },
 };

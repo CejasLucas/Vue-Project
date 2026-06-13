@@ -1,0 +1,48 @@
+.table-card {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.table-content-index {
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.table-content-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.table-content {
+  font-size: 0.9rem;
+}
+
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.data-table th {
+  font-size: 0.95rem;
+  padding: 12px 1.1rem;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+}
+
+.data-table td {
+  padding: 7px 1.1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.data-table tbody tr:hover td {
+  background: rgba(55,138,221,.04);
+}
