@@ -1,25 +1,18 @@
-.name {
-  display: flex;
-  align-items: center;
-  gap: 20px;
+/* UTILITIES */
+.mono { 
+  font-family: monospace; 
+}
+.muted  { 
+  color: var(--muted); 
+}
+.spin { 
+  animation: spin .7s linear infinite; 
+}
+.amount { 
+  font-weight: 600; 
+  color: var(--text); 
 }
 
-.dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #378add;
-  flex-shrink: 0;
-  box-shadow: 0 0 0 4px rgba(55, 138, 221, 0.12);
-}
-
-.mono {
-  font-family: var(--mono);
-}
-
-.muted {
-  color: var(--text);
-}
 
 .empty {
   padding: 3rem 1rem;
@@ -38,8 +31,20 @@
   margin: 6px 1rem;
 }
 
-.spin {
-  animation: spin .7s linear infinite;
+
+.name {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #378add;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 4px rgba(55, 138, 221, 0.12);
 }
 
 @keyframes spin {

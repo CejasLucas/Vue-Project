@@ -2,7 +2,7 @@ import { http } from "./AppHTTP";
 
 import type { Purchase } from "../types/purchase";
 
-import type { PurchaseDetail } from "../types/purchaseDetails";
+import type { PurchaseDetailDTO } from "../types/purchaseDetails";
 
 export const purchaseApi = {
     getAll() {
@@ -14,6 +14,6 @@ export const purchaseApi = {
     },
 
     getDetails(id: string) {
-        return http.get<PurchaseDetail>(`/purchases/details/${id}`);
+        return http.get<PurchaseDetailDTO>(`/purchases/details/${id}`);
     },
 };

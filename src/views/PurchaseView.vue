@@ -2,7 +2,7 @@
 import { ref, onMounted } from "vue";
 import { purchaseApi } from "../api/PurchaseApi";
 import type { Purchase } from "../types/purchase";
-import type { PurchaseDetail } from "../types/purchaseDetails";
+import type { PurchaseDetailDTO } from "../types/purchaseDetails";
 
 
 const loading = ref(true);
@@ -10,7 +10,7 @@ const showDetails = ref(false);
 const loadingDetails = ref(false);
 
 const purchases = ref<Purchase[]>([]);
-const purchaseDetail = ref<PurchaseDetail | null>(null);
+const purchaseDetail = ref<PurchaseDetailDTO | null>(null);
 
 
 onMounted(async () => {
@@ -90,10 +90,10 @@ function statusLabel(s: Status) {
             <tr>
               <th class="text-left table-header" style="width: 50px">#</th>
               <th class="text-left table-header" style="width: 100px">PURCHASE ID</th>
-              <th class="text-left table-header" style="width: 100px">DATE</th>
-              <th class="text-left table-header" style="width: 100px">TOTAL</th>
-              <th class="text-center table-header" style="width: 100px">STATUS</th>
-              <th class="text-left table-header" style="width: 100px">PURCHASE DETAILS</th>
+              <th class="text-left table-header" style="width: 90px">DATE</th>
+              <th class="text-left table-header" style="width: 90px">TOTAL</th>
+              <th class="text-center table-header" style="width: 90px">STATUS</th>
+              <th class="text-center table-header" style="width: 110px">PURCHASE DETAILS</th>
             </tr>
           </thead>
           <tbody>
@@ -122,7 +122,7 @@ function statusLabel(s: Status) {
                   {{ statusLabel(purchase.status) }}
                 </span>
               </td>
-              <td>
+              <td class="text-center">
                 <button
                   class="details-link"
                   @click="openDetails(purchase.id)"
@@ -138,51 +138,110 @@ function statusLabel(s: Status) {
 
     <Teleport to="body">
       <div
-        v-if="showDetails"
-        class="budget-modal-overlay"
+        v-if="showDetails && purchaseDetail"
+        class="purchase-modal-overlay"
         @click.self="showDetails = false"
       >
-        <div class="budget-modal">
+        <div class="purchase-modal">
 
-          <div class="budget-modal-header">
-            <h2 class="budget-modal-title">
-              Purchase Details
-            </h2>
-
-            <button
-              class="budget-modal-close-btn"
-              @click="showDetails = false"
-            >
-              ✕
-            </button>
-          </div>
-
-          <div
-            v-if="purchaseDetail"
-            class="budget-modal-body"
+          <button
+            class="purchase-modal-close"
+            @click="showDetails = false"
           >
-            <div class="budget-modal-info">
-              <div>
-                <strong>Purchase ID</strong>
-                {{ purchaseDetail.id.slice(-6).toUpperCase() }}
-              </div>
+            ✕
+          </button>
 
-              <div>
-                <strong>Date</strong>
-                {{ formatDate(purchaseDetail.purchase_date) }}
-              </div>
-
-              <div>
-                <strong>Status</strong>
-                {{ statusLabel(purchaseDetail.status) }}
-              </div>
+          <div class="purchase-info-card">
+            
+            
+            <div class="purchase-info-item">
+              <span>Purchase</span>
+              <strong>
+                #{{ purchaseDetail.id.slice(-10).toUpperCase() }}
+              </strong>
             </div>
 
-            <table class="budget-modal-table">
+
+            <div class="purchase-info-item">
+              <span>Date</span>
+              <strong>
+                {{ formatDate(purchaseDetail.purchase_date) }}
+              </strong>
+            </div>
+
+            <div class="purchase-info-item">
+              <span>Items</span>
+              <strong>
+                {{ purchaseDetail.items.length }}
+              </strong>
+            </div>
+            
+
+            <div class="purchase-info-item">
+              <span>Total</span>
+              <strong class="purchase-total-highlight">
+                {{ formatAmount(purchaseDetail.total_amount) }}
+              </strong>
+            </div>
+            
+            <div class="purchase-info-item">
+              <span>Status</span>
+              <span
+                class="badge"
+                :class="
+                  purchaseDetail.status === 'confirmed'
+                    ? 'badge-confirmed'
+                    : 'badge-pending'
+                "
+              >
+                <span class="badge-dot" />
+                {{ statusLabel(purchaseDetail.status) }}
+              </span>
+            </div>
+            
+          </div>
+
+          <!-- Supplier -->
+          <div class="purchase-supplier-card">
+
+            <div class="purchase-supplier-icon">
+              <i class="ti ti-building-store"></i>
+            </div>
+
+            <div class="purchase-supplier-block">
+              <span class="purchase-field-label">Supplier</span>
+              <strong>{{ purchaseDetail.supplier.name }}</strong>
+              <small>NIF: {{ purchaseDetail.supplier.tax_id }}</small>
+            </div>
+
+            <div class="purchase-supplier-block">
+              <span class="purchase-field-label">Contact</span>
+              <strong>{{ purchaseDetail.supplier.email }}</strong>
+              <small>{{ purchaseDetail.supplier.phone }}</small>
+            </div>
+
+            <div class="purchase-supplier-block">
+              <span class="purchase-field-label">Address</span>
+              <strong>{{ purchaseDetail.supplier.address }}</strong>
+              <small>
+                {{ purchaseDetail.supplier.locality }},
+                {{ purchaseDetail.supplier.nationality }}
+              </small>
+            </div>
+
+          </div>
+
+
+          <!-- Products -->
+          <div class="purchase-products-card">
+
+            <table class="purchase-products-table">
               <thead>
                 <tr>
                   <th>Product</th>
-                  <th>Qty</th>
+                  <th>Category</th>
+                  <th>Brand</th>
+                  <th>Quantity</th>
                   <th>Unit Price</th>
                   <th>Subtotal</th>
                 </tr>
@@ -191,52 +250,67 @@ function statusLabel(s: Status) {
               <tbody>
                 <tr
                   v-for="item in purchaseDetail.items"
-                  :key="item.product_id"
+                  :key?="item"
                 >
-                  <td>{{ item.product_name }}</td>
-                  <td>{{ item.quantity }}</td>
-                  <td>{{ formatAmount(item.unit_price) }}</td>
-                  <td>{{ formatAmount(item.subtotal) }}</td>
+                  <td>
+                    {{ item.product.name }}
+                  </td>
+
+                  <td>
+                    {{ item.product.category }}
+                  </td>
+                  
+                  <td>
+                    {{ item.product.brand }}
+                  </td>
+
+                  <td>
+                    {{ item.quantity }}
+                  </td>
+
+                  <td>
+                    {{ formatAmount(item.unit_price) }}
+                  </td>
+
+                  <td>
+                    {{ formatAmount(item.subtotal) }}
+                  </td>
                 </tr>
               </tbody>
             </table>
 
-            <div class="budget-modal-total">
-              <span>Total:</span>
+          </div>
 
-              <strong>
-                {{ formatAmount(purchaseDetail.total_amount) }}
-              </strong>
-            </div>
+          <!-- Total -->
+          <div class="purchase-total">
+            <span>Total</span>
+            <strong>
+              {{ formatAmount(purchaseDetail.total_amount) }}
+            </strong>
           </div>
 
         </div>
       </div>
-    </Teleport>
+      </Teleport>
+
   </div>
 </template>
 
 <style scoped>
-/* Amount */
-.amount {
-  font-weight: 600;
-  color: var(--text-h);
-}
-
 /* Badge */
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 3px 10px;
+  padding: 6px 12px;
   border-radius: 20px;
-  font-size: 0.68rem;
+  font-size: 0.8rem;
   font-weight: 500;
 }
 
 .badge-dot {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   flex-shrink: 0;
 }
