@@ -1,4 +1,5 @@
 <script setup lang="ts">
+
 import { ref, onMounted } from "vue";
 import { brandApi } from "../api/BrandApi";
 import type { Brand } from "../types/brand";
@@ -94,6 +95,8 @@ async function doDelete() {
 }
 
 </script>
+
+
 
 <template>
   <div class="page">
@@ -333,8 +336,20 @@ async function doDelete() {
   </div>
 </template>
 
+
+
 <style scoped>
-/* Status Badge */
+@import "../assets/styles/layout.css";
+@import "../assets/styles/position.css";
+@import "../assets/styles/utilities.css";
+@import "../assets/styles/table.css";
+@import "../assets/styles/buttons.css";
+@import "../assets/styles/modal.css";
+@import "../assets/styles/forms.css";
+
+/* ── Category ──────────────────────────────────────── */
+@import "../assets/styles/toggle.css";
+
 .status-badge {
   display: inline-flex;
   align-items: center;
@@ -352,7 +367,6 @@ async function doDelete() {
   border-radius: 50%;
 }
 
-/* Active */
 .status-badge.active {
   background: rgba(34, 197, 94, 0.12);
   color: #22c55e;
@@ -364,7 +378,6 @@ async function doDelete() {
   box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
 }
 
-/* Inactive */
 .status-badge.inactive {
   background: rgba(239, 68, 68, 0.12);
   color: #ef4444;
@@ -376,68 +389,4 @@ async function doDelete() {
   box-shadow: 0 0 6px rgba(239, 68, 68, 0.5);
 }
 
-.confirm-text {
-  font-size: 0.85rem;
-  color: var(--text);
-  margin: 0;
-  line-height: 1.5;
-}
-
-.toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-}
-
-.toggle-track {
-  width: 52px;
-  height: 28px;
-  border-radius: 999px;
-  background: rgba(239, 68, 68, 0.25);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  position: relative;
-  transition: all 0.2s ease;
-}
-
-.toggle-thumb {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: white;
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-.toggle.active .toggle-track {
-  background: rgba(34, 197, 94, 0.25);
-  border-color: rgba(34, 197, 94, 0.35);
-}
-
-.toggle.active .toggle-thumb {
-  transform: translateX(24px);
-}
-
-.toggle-label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-h);
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.4;
-  }
-}
 </style>

@@ -1,0 +1,58 @@
+/* Stock badge */
+.stock-badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+.stock-ok { background: rgba(48, 124, 61, 0.15); color: #22c55e; }
+.stock-low   { background: rgba(197, 173, 63, 0.15);  color: #ad8b19; }
+.stock-critical { background: rgba(239,68,68,.12);  color: #dc2626; }
+
+/* Button row actions modal stcok */
+.stock-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stock-control input {
+  text-align: center;
+  width: 100px;
+}
+
+.stock-btn {
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transition: all .2s ease;
+}
+
+.stock-btn i {
+  font-size: 18px;
+}
+.stock-btn.decrease {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.stock-btn.decrease:hover {
+  background: #fecaca;
+}
+
+.stock-btn.increase {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.stock-btn.increase:hover {
+  background: #bbf7d0;
+}

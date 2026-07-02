@@ -1,35 +1,40 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
+
 import { purchaseApi } from "../api/PurchaseApi";
 import type { Purchase } from "../types/purchase";
 import type { PurchaseDetailDTO } from "../types/purchaseDetails";
 
+import PurchaseFormModal from "../components/purchase/PurchaseFormModal.vue";
+import PurchaseDetailsModal from "../components/purchase/PurchaseDetailsModal.vue";
+
 
 const loading = ref(true);
-const showDetails = ref(false);
-const loadingDetails = ref(false);
-
 const purchases = ref<Purchase[]>([]);
 const purchaseDetail = ref<PurchaseDetailDTO | null>(null);
 
+const showDetails = ref(false);
+const showCreateModal = ref(false);
 
 onMounted(async () => {
   const response = await purchaseApi.getAll();
+
   purchases.value = response.data;
+
   loading.value = false;
 });
 
-
 async function openDetails(id: string) {
-  loadingDetails.value = true;
+  const response = await purchaseApi.getDetails(id);
 
-  try {
-    const response = await purchaseApi.getDetails(id);
-    purchaseDetail.value = response.data;
-    showDetails.value = true;
-  } finally {
-    loadingDetails.value = false;
-  }
+  purchaseDetail.value = response.data;
+
+  showDetails.value = true;
+}
+
+function closeDetails() {
+  showDetails.value = false;
+  purchaseDetail.value = null;
 }
 
 function formatDate(d: string) {
@@ -44,14 +49,13 @@ function formatAmount(n: number) {
   return `$${n.toLocaleString("en-US")}`;
 }
 
-type Status = "confirmed" | "pending" | string;
-
-function statusLabel(s: Status) {
-  if (s === "confirmed") return "Confirmed";
-  if (s === "pending")   return "Pending";
-  return s;
+function statusLabel(status: string) {
+  if (status === "confirmed") return "Confirmed";
+  if (status === "pending") return "Pending";
+  return status;
 }
 </script>
+
 
 
 <template>
@@ -63,7 +67,10 @@ function statusLabel(s: Status) {
         <p class="page-sub">{{ purchases.length }} registered purchases</p>
       </div>
 
-      <button class="btn-primary">
+      <button
+        class="btn-primary"
+        @click="showCreateModal = true"
+      >
         <i class="ti ti-plus" />
         Add purchase
       </button>
@@ -136,190 +143,33 @@ function statusLabel(s: Status) {
       </div>
     </div>
 
-    <Teleport to="body">
-      <div
-        v-if="showDetails && purchaseDetail"
-        class="purchase-modal-overlay"
-        @click.self="showDetails = false"
-      >
-        <div class="purchase-modal">
+    <PurchaseDetailsModal
+      v-if="showDetails && purchaseDetail"
+      :purchase="purchaseDetail"
+      @close="closeDetails"
+    />
 
-          <button
-            class="purchase-modal-close"
-            @click="showDetails = false"
-          >
-            ✕
-          </button>
-
-          <div class="purchase-info-card">
-            
-            
-            <div class="purchase-info-item">
-              <span>Purchase</span>
-              <strong>
-                #{{ purchaseDetail.id.slice(-10).toUpperCase() }}
-              </strong>
-            </div>
-
-
-            <div class="purchase-info-item">
-              <span>Date</span>
-              <strong>
-                {{ formatDate(purchaseDetail.purchase_date) }}
-              </strong>
-            </div>
-
-            <div class="purchase-info-item">
-              <span>Items</span>
-              <strong>
-                {{ purchaseDetail.items.length }}
-              </strong>
-            </div>
-            
-
-            <div class="purchase-info-item">
-              <span>Total</span>
-              <strong class="purchase-total-highlight">
-                {{ formatAmount(purchaseDetail.total_amount) }}
-              </strong>
-            </div>
-            
-            <div class="purchase-info-item">
-              <span>Status</span>
-              <span
-                class="badge"
-                :class="
-                  purchaseDetail.status === 'confirmed'
-                    ? 'badge-confirmed'
-                    : 'badge-pending'
-                "
-              >
-                <span class="badge-dot" />
-                {{ statusLabel(purchaseDetail.status) }}
-              </span>
-            </div>
-            
-          </div>
-
-          <!-- Supplier -->
-          <div class="purchase-supplier-card">
-
-            <div class="purchase-supplier-icon">
-              <i class="ti ti-building-store"></i>
-            </div>
-
-            <div class="purchase-supplier-block">
-              <span class="purchase-field-label">Supplier</span>
-              <strong>{{ purchaseDetail.supplier.name }}</strong>
-              <small>NIF: {{ purchaseDetail.supplier.tax_id }}</small>
-            </div>
-
-            <div class="purchase-supplier-block">
-              <span class="purchase-field-label">Contact</span>
-              <strong>{{ purchaseDetail.supplier.email }}</strong>
-              <small>{{ purchaseDetail.supplier.phone }}</small>
-            </div>
-
-            <div class="purchase-supplier-block">
-              <span class="purchase-field-label">Address</span>
-              <strong>{{ purchaseDetail.supplier.address }}</strong>
-              <small>
-                {{ purchaseDetail.supplier.locality }},
-                {{ purchaseDetail.supplier.nationality }}
-              </small>
-            </div>
-
-          </div>
-
-
-          <!-- Products -->
-          <div class="purchase-products-card">
-
-            <table class="purchase-products-table">
-              <thead>
-                <tr>
-                  <th>Product</th>
-                  <th>Category</th>
-                  <th>Brand</th>
-                  <th>Quantity</th>
-                  <th>Unit Price</th>
-                  <th>Subtotal</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                <tr
-                  v-for="item in purchaseDetail.items"
-                  :key?="item"
-                >
-                  <td>
-                    {{ item.product.name }}
-                  </td>
-
-                  <td>
-                    {{ item.product.category }}
-                  </td>
-                  
-                  <td>
-                    {{ item.product.brand }}
-                  </td>
-
-                  <td>
-                    {{ item.quantity }}
-                  </td>
-
-                  <td>
-                    {{ formatAmount(item.unit_price) }}
-                  </td>
-
-                  <td>
-                    {{ formatAmount(item.subtotal) }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-
-          </div>
-
-          <!-- Total -->
-          <div class="purchase-total">
-            <span>Total</span>
-            <strong>
-              {{ formatAmount(purchaseDetail.total_amount) }}
-            </strong>
-          </div>
-
-        </div>
-      </div>
-      </Teleport>
+    <PurchaseFormModal
+      v-if="showCreateModal"
+      @close="showCreateModal = false"
+    />
 
   </div>
 </template>
 
+
+
 <style scoped>
-/* Badge */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 500;
-}
+@import "../assets/styles/layout.css";
+@import "../assets/styles/position.css";
+@import "../assets/styles/utilities.css";
+@import "../assets/styles/table.css";
+@import "../assets/styles/buttons.css";
+@import "../assets/styles/modal.css";
+@import "../assets/styles/forms.css";
 
-.badge-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.badge-confirmed { background: rgba(55,138,221,.15); color: #378ADD; }
-.badge-pending   { background: rgba(168,85,247,.15);  color: #A855F7; }
-
-.badge-confirmed .badge-dot { background: #378ADD; }
-.badge-pending .badge-dot { background: #A855F7; }
+/* ── Purchase ──────────────────────────────────────── */
+@import "../assets/styles/badge.css";
 
 .details-link {
   border: none;

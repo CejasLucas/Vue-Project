@@ -1,4 +1,5 @@
 <script setup lang="ts">
+
 import { ref, onMounted } from "vue";
 import { categoryApi } from "../api/CategoryApi";
 import type { Category } from "../types/category";
@@ -93,6 +94,8 @@ async function doDelete() {
   }
 }
 </script>
+
+
 
 <template>
   <div class="page">
@@ -304,6 +307,16 @@ async function doDelete() {
   </div>
 </template>
 
-<style scoped>
 
+
+<style scoped>
+@import "../assets/styles/layout.css";
+@import "../assets/styles/position.css";
+@import "../assets/styles/utilities.css";
+@import "../assets/styles/table.css";
+@import "../assets/styles/buttons.css";
+@import "../assets/styles/modal.css";
+@import "../assets/styles/forms.css";
+
+/* ── Category ──────────────────────────────────────── */
 </style>

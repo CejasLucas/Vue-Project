@@ -2,12 +2,15 @@
 .mono { 
   font-family: monospace; 
 }
+
 .muted  { 
   color: var(--muted); 
 }
+
 .spin { 
   animation: spin .7s linear infinite; 
 }
+
 .amount { 
   font-weight: 600; 
   color: var(--text); 

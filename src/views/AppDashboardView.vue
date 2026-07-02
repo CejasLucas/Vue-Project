@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { 
   ref, 
+  nextTick,
   computed, 
+  onUnmounted,
   onMounted 
 } from "vue";
 
 import { 
   Line, 
-  Doughnut 
+  Doughnut,
+  Bar
 } from "vue-chartjs";
 
 import {
@@ -16,6 +19,7 @@ import {
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   ArcElement,
   Tooltip,
   Legend,
@@ -29,6 +33,7 @@ ChartJS.register(
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   ArcElement,
   Tooltip,
   Legend,
@@ -48,14 +53,31 @@ import type { Purchase } from "../types/purchase";
 import type { PurchaseItem } from "../types/purchaseItem";
 
 
+const loading       = ref(true);
+const lineChartRef = ref();
+const donutChartRef = ref();
+const barChartRef = ref();
+
 const products      = ref<Product[]>([]);
 const categories    = ref<Category[]>([]);
 const suppliers     = ref<Supplier[]>([]);
 const purchases     = ref<Purchase[]>([]);
 const purchaseItems = ref<PurchaseItem[]>([]);
-const loading       = ref(true);
+
+
+function resizeAllCharts() {
+  nextTick(() => {
+    requestAnimationFrame(() => {
+      lineChartRef.value?.chart?.resize();
+      donutChartRef.value?.chart?.resize();
+      barChartRef.value?.chart?.resize();
+    });
+  });
+}
 
 onMounted(async () => {
+  window.addEventListener("sidebar-resized", resizeAllCharts);
+
   const [p, c, s, pu, pi] = await Promise.all([
     productApi.getAll(),
     categoryApi.getAll(),
@@ -63,12 +85,20 @@ onMounted(async () => {
     purchaseApi.getAll(),
     purchaseItemApi.getAll(),
   ]);
-  products.value      = p.data;
-  categories.value    = c.data;
-  suppliers.value     = s.data;
-  purchases.value     = pu.data;
+
+  products.value = p.data;
+  categories.value = c.data;
+  suppliers.value = s.data;
+  purchases.value = pu.data;
   purchaseItems.value = pi.data;
-  loading.value       = false;
+
+  loading.value = false;
+
+  resizeAllCharts();
+});
+
+onUnmounted(() => {
+  window.removeEventListener("sidebar-resized", resizeAllCharts);
 });
 
 // ── Cards ───────────────────────────────────────────────────────────
@@ -159,6 +189,7 @@ const lineChartData = computed(() => ({
 const lineChartOptions: ChartOptions<"line"> = {
   responsive: true,
   maintainAspectRatio: false,
+  resizeDelay: 150,
   plugins: { legend: { display: false } },
   scales: {
     x: {
@@ -228,6 +259,7 @@ const donutTotal = computed(() =>
 const donutOptions: ChartOptions<"doughnut"> = {
   responsive: true,
   maintainAspectRatio: false,
+  resizeDelay: 150,
   cutout: "72%",
   plugins: {
     legend: { display: false },
@@ -239,11 +271,67 @@ const donutOptions: ChartOptions<"doughnut"> = {
   },
 };
 
-// ── Últimas compras ──────────────────────────────────────────────────
+// ── Top Suppliers (bar chart) ─────────────────────────────────────
 const supplierMap = computed(() =>
   new Map(suppliers.value.map((s) => [s.id, s.name]))
 );
 
+const topSuppliers = computed(() => {
+  const totals: Record<string, number> = {};
+  purchases.value.forEach((p) => {
+    const name = supplierMap.value.get(p.supplier_id) ?? "Other";
+    totals[name] = (totals[name] ?? 0) + p.total_amount;
+  });
+  return Object.entries(totals)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+});
+
+const barChartData = computed(() => ({
+  labels: topSuppliers.value.map(([name]) => name),
+  datasets: [
+    {
+      label: "Spend",
+      data: topSuppliers.value.map(([, v]) => v),
+      backgroundColor: "#0891B2",
+      borderRadius: 4,
+      barThickness: 12,
+    },
+  ],
+}));
+
+const barChartOptions: ChartOptions<"bar"> = {
+  indexAxis: "y",
+  responsive: true,
+  maintainAspectRatio: false,
+  resizeDelay: 150,
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      callbacks: {
+        label: (ctx) => ` $${(ctx.raw as number).toLocaleString("en-US")}`,
+      },
+    },
+  },
+  scales: {
+    x: {
+      grid: { color: "rgba(255,255,255,0.04)" },
+      border: { dash: [4, 4] },
+      ticks: {
+        color: "#6b7280",
+        font: { size: 10 },
+        callback: (v) =>
+          Number(v) >= 1000 ? `$${Number(v) / 1000}K` : `$${v}`,
+      },
+    },
+    y: {
+      grid: { display: false },
+      ticks: { color: "#6b7280", font: { size: 10 } },
+    },
+  },
+};
+
+// ── Últimas compras ──────────────────────────────────────────────────
 const lastPurchases = computed(() =>
   [...purchases.value]
     .sort((a, b) => new Date(b.purchase_date).getTime() - new Date(a.purchase_date).getTime())
@@ -265,6 +353,9 @@ const lowStock = computed(() =>
     .slice(0, 10)
 );
 </script>
+
+
+
 
 <template>
   <div class="dashboard">
@@ -297,52 +388,76 @@ const lowStock = computed(() =>
     <!-- Gráficos -->
     <div class="charts-row">
 
-      <div class="chart-card">
+      <div class="chart-card chart-card-line">
         <div class="chart-header">
           <span class="chart-title">Spending by Month</span>
           <span class="chart-badge">{{ new Date().getFullYear() }}</span>
         </div>
         <div class="chart-body">
           <div v-if="loading" class="skel chart-skel" />
-          <Line v-else :data="lineChartData" :options="lineChartOptions" />
+          <Line
+            ref="lineChartRef"
+            :data="lineChartData"
+            :options="lineChartOptions"
+          />
         </div>
       </div>
 
-      <div class="chart-card">
-        <div class="chart-header">
-          <span class="chart-title">Spending by Category</span>
-          <span class="chart-badge">Top 5</span>
-        </div>
-        <div v-if="loading" class="chart-body">
-          <div class="skel chart-skel" />
-        </div>
-        <div v-else class="donut-body">
-          <div class="donut-wrap">
-            <Doughnut :data="donutData" :options="donutOptions" />
-            <div class="donut-center">
-              <span class="donut-total-label">Total</span>
-              <span class="donut-total-value">
-                ${{ Math.round(donutTotal / 1000).toLocaleString("en-US") }}K
-              </span>
-            </div>
+      <div class="charts-col-right">
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <span class="chart-title">Spending by Category</span>
+            <span class="chart-badge">Top 5</span>
           </div>
-          <ul class="donut-legend">
-            <li
-              v-for="(label, i) in donutData.labels"
-              :key="String(label)"
-              class="legend-item"
-            >
-              <span class="legend-dot" :style="{ background: DONA_COLORS[i] }" />
-              <span class="legend-name">{{ label }}</span>
-              <span class="legend-pct">
-                {{ Math.round((donutData.datasets[0].data[i] as number) / donutTotal * 100) }}%
-              </span>
-              <span class="legend-value">
-                ${{ (donutData.datasets[0].data[i] as number).toLocaleString("en-US") }}
-              </span>
-            </li>
-          </ul>
+          <div v-if="loading" class="chart-body">
+            <div class="skel chart-skel" />
+          </div>
+          <div v-else class="donut-body">
+            <div class="donut-wrap">
+              <Doughnut
+                ref="donutChartRef"
+                :data="donutData"
+                :options="donutOptions"
+              />
+              <div class="donut-center">
+                <span class="donut-total-label">Total</span>
+                <span class="donut-total-value">
+                  ${{ Math.round(donutTotal / 1000).toLocaleString("en-US") }}K
+                </span>
+              </div>
+            </div>
+            <ul class="donut-legend">
+              <li
+                v-for="(label, i) in donutData.labels"
+                :key="String(label)"
+                class="legend-item"
+              >
+                <span class="legend-dot" :style="{ background: DONA_COLORS[i] }" />
+                <span class="legend-name">{{ label }}</span>
+                <span class="legend-pct">
+                  {{ Math.round((donutData.datasets[0].data[i] as number) / donutTotal * 100) }}%
+                </span>
+              </li>
+            </ul>
+          </div>
         </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <span class="chart-title">Top Suppliers</span>
+            <span class="chart-badge">By spend</span>
+          </div>
+          <div class="chart-body">
+            <div v-if="loading" class="skel chart-skel" />
+            <Bar
+              ref="barChartRef"
+              :data="barChartData"
+              :options="barChartOptions"
+            />
+          </div>
+        </div>
+
       </div>
 
     </div>
@@ -478,9 +593,17 @@ const lowStock = computed(() =>
 /* ── Charts ── */
 .charts-row {
   display: grid;
-  grid-template-columns: 2.5fr 1fr;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: .5rem;
+  align-items: stretch;
+}
+
+.charts-col-right {
+  display: flex;
+  flex-direction: column;
   gap: 0.5rem;
 }
+
 .chart-card {
   background: var(--code-bg);
   border: 1px solid var(--border);
@@ -490,22 +613,48 @@ const lowStock = computed(() =>
   flex-direction: column;
   gap: 0.75rem;
 }
-.chart-header { display: flex; align-items: center; justify-content: space-between; }
+
+.chart-card-line { height: 100%; }
+
+.charts-col-right .chart-card { flex: 1; }
+
+.chart-header { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
 .chart-title  { font-size: 0.88rem; font-weight: 600; color: var(--text-h); }
 .chart-badge  {
   font-size: 0.7rem; color: var(--text);
   background: var(--border); padding: 2px 10px; border-radius: 20px;
 }
-.chart-body { height: 10rem; position: relative; }
+
+.chart-card-line .chart-body,
+.charts-col-right .chart-body,
+.charts-col-right .donut-body {
+  flex: 1;
+  height: auto;
+  min-height: 0;
+}
+
+.charts-col-right,
+.chart-card,
+.chart-body,
+.donut-body {
+  min-width: 0;
+}
+
+.chart-body canvas,
+.donut-wrap canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
 
 /* Donut */
 .donut-body {
   display: grid;
-  grid-template-columns: 130px 1fr;
+  grid-template-columns: 100px 1fr;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
 }
-.donut-wrap { position: relative; width: 130px; height: 130px; flex-shrink: 0; }
+.donut-wrap { position: relative; width: 100px; height: 100px; flex-shrink: 0; }
 .donut-center {
   position: absolute; inset: 0;
   display: flex; flex-direction: column;
@@ -513,17 +662,16 @@ const lowStock = computed(() =>
   pointer-events: none;
 }
 .donut-total-label {
-  font-size: 0.58rem; color: var(--text);
+  font-size: 0.55rem; color: var(--text);
   text-transform: uppercase; letter-spacing: 0.06em;
 }
-.donut-total-value { font-size: 0.9rem; font-weight: 600; color: var(--text-h); }
+.donut-total-value { font-size: 0.8rem; font-weight: 600; color: var(--text-h); }
 
-.donut-legend { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
-.legend-item  { display: flex; align-items: center; gap: 7px; }
-.legend-dot   { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.legend-name  { flex: 1; font-size: 0.75rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.legend-pct   { font-size: 0.7rem; color: var(--text); min-width: 30px; text-align: right; }
-.legend-value { font-size: 0.75rem; color: var(--text-h); font-weight: 500; min-width: 82px; text-align: right; }
+.donut-legend { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 5px; }
+.legend-item  { display: flex; align-items: center; gap: 6px; }
+.legend-dot   { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.legend-name  { flex: 1; font-size: 0.7rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.legend-pct   { font-size: 0.65rem; color: var(--text-h); font-weight: 500; min-width: 28px; text-align: right; }
 
 /* ── Tables ── */
 .tables-row {
@@ -545,23 +693,16 @@ const lowStock = computed(() =>
   flex-shrink: 0;
 }
 
-/* Scroll container — altura fija, thead sticky */
+
 .table-scroll {
   overflow-y: auto;
   max-height: 19.5rem;
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
 }
-.table-scroll::-webkit-scrollbar {
-  width: 4px;
-}
-.table-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-.table-scroll::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 4px;
-}
+.table-scroll::-webkit-scrollbar { width: 4px; }
+.table-scroll::-webkit-scrollbar-track { background: transparent; }
+.table-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
 .data-table {
   width: 100%;
@@ -634,5 +775,6 @@ const lowStock = computed(() =>
 @media (max-width: 900px) {
   .cards { grid-template-columns: repeat(2, 1fr); }
   .charts-row, .tables-row { grid-template-columns: 1fr; }
+  .chart-card-line { height: 20rem; }
 }
 </style>

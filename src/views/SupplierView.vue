@@ -1,10 +1,11 @@
 <script setup lang="ts">
+
 import { ref, onMounted } from "vue";
 import { supplierApi } from "../api/SupplierApi";
 import type { Supplier } from "../types/supplier";
 
-const suppliers = ref<Supplier[]>([]);
 const loading = ref(true);
+const suppliers = ref<Supplier[]>([]);
 
 /* ── Modal state ─────────────────────────────────────────── */
 const showModal   = ref(false);
@@ -279,8 +280,18 @@ function avatarStyle(index: number) {
   </div>
 </template>
 
+
+
 <style scoped>
-/* ── Supplier name ──────────────────────────────────────── */
+@import "../assets/styles/layout.css";
+@import "../assets/styles/position.css";
+@import "../assets/styles/utilities.css";
+@import "../assets/styles/table.css";
+@import "../assets/styles/buttons.css";
+@import "../assets/styles/modal.css";
+@import "../assets/styles/forms.css";
+
+/* ── Supplier ──────────────────────────────────────── */
 .supplier-name {
   display: flex;
   align-items: center;

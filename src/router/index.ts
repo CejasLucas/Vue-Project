@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 
-import MainLayout from "../layout/MainLayout.vue";
+import MainLayout from "../components/layout/MainLayout.vue";
 
 import DashboardView from "../views/AppDashboardView.vue";
 

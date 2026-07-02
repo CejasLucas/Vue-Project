@@ -1,20 +1,20 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 
-import { productApi } from "../api/ProductApi";
+
 import { brandApi } from "../api/BrandApi";
 import { categoryApi } from "../api/CategoryApi";
+import { productApi } from "../api/ProductApi";
 
-import type { Product } from "../types/product";
 import type { Brand } from "../types/brand";
 import type { Category } from "../types/category";
+import type { Product } from "../types/product";
 
 const showModal = ref(false);
 const isEditing = ref(false);
 const saving = ref(false);
 const deleting = ref(false);
 const deleteId = ref<string | null>(null);
-
 
 const emptyForm = (): Omit<Product, "id"> => ({
   sku: "",
@@ -155,6 +155,8 @@ async function doDelete() {
   }
 }
 </script>
+
+
 
 <template>
   <div class="page">
@@ -460,7 +462,20 @@ async function doDelete() {
   </div>
 </template>
 
+
+
 <style scoped>
+@import "../assets/styles/layout.css";
+@import "../assets/styles/position.css";
+@import "../assets/styles/utilities.css";
+@import "../assets/styles/table.css";
+@import "../assets/styles/buttons.css";
+@import "../assets/styles/modal.css";
+@import "../assets/styles/forms.css";
+
+/* ── Product ──────────────────────────────────────── */
+@import "../assets/styles/stock.css";
+
 .price-input::-webkit-outer-spin-button,
 .price-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
@@ -475,63 +490,4 @@ async function doDelete() {
 .dot-ok { background: #22c55e;; }
 .dot-low   { background: #ad8b19; }
 .dot-critical { background: #ef4444; }
-
-/* Stock badge */
-.stock-badge {
-  display: inline-block;
-  padding: 2px 9px;
-  border-radius: 20px;
-  font-size: 0.72rem;
-  font-weight: 500;
-}
-.stock-ok { background: rgba(48, 124, 61, 0.15); color: #22c55e; }
-.stock-low   { background: rgba(197, 173, 63, 0.15);  color: #ad8b19; }
-.stock-critical { background: rgba(239,68,68,.12);  color: #dc2626; }
-
-/* Button row actions modal stcok */
-.stock-control {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.stock-control input {
-  text-align: center;
-  width: 100px;
-}
-
-.stock-btn {
-  width: 38px;
-  height: 38px;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  transition: all .2s ease;
-}
-
-.stock-btn i {
-  font-size: 18px;
-}
-.stock-btn.decrease {
-  background: #fee2e2;
-  color: #dc2626;
-}
-
-.stock-btn.decrease:hover {
-  background: #fecaca;
-}
-
-.stock-btn.increase {
-  background: #dcfce7;
-  color: #16a34a;
-}
-
-.stock-btn.increase:hover {
-  background: #bbf7d0;
-}
 </style>

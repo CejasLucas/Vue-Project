@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from "vue";
 import { useRoute } from "vue-router";
 
 const route = useRoute();
@@ -11,21 +12,42 @@ const navItems = [
   { to: "/categories", icon: "tag",              label: "Categories" },
   { to: "/brands",     icon: "building-factory", label: "Brands" },
 ];
+
+const collapsed = ref(false);
+const sidebarRef = ref<HTMLElement | null>(null);
+
+function toggleSidebar() {
+  collapsed.value = !collapsed.value;
+}
+
+// Cuando termina la animación de ancho del sidebar, avisamos
+// a quien esté escuchando (ej. Dashboard con sus charts) para
+// que recalculen tamaño una sola vez, ya con el layout asentado.
+function onSidebarTransitionEnd(e: TransitionEvent) {
+  if (e.propertyName === "width") {
+    window.dispatchEvent(new Event("sidebar-resized"));
+  }
+}
 </script>
 
 <template>
   <div class="layout">
 
     <!-- Sidebar -->
-    <aside class="sidebar">
+    <aside
+      ref="sidebarRef"
+      class="sidebar"
+      :class="{ collapsed }"
+      @transitionend="onSidebarTransitionEnd"
+    >
       <div class="sidebar-logo">
         <span class="logo-icon">
           <i class="ti ti-settings-2" aria-hidden="true" />
         </span>
-        <span class="logo-text">Company</span>
+        <span class="logo-text" v-show="!collapsed">Company</span>
       </div>
 
-      <p class="nav-section-label">Navigation</p>
+      <p class="nav-section-label" v-show="!collapsed">Navigation</p>
 
       <nav class="sidebar-nav">
         <RouterLink
@@ -34,20 +56,32 @@ const navItems = [
           :to="item.to"
           class="nav-item"
           :class="{ active: route.path === item.to }"
+          :title="collapsed ? item.label : ''"
         >
           <i :class="`ti ti-${item.icon}`" aria-hidden="true" />
-          <span>{{ item.label }}</span>
+          <span v-show="!collapsed">{{ item.label }}</span>
         </RouterLink>
       </nav>
 
       <div class="sidebar-footer">
         <div class="user-avatar">AA</div>
-        <div class="user-info">
+        <div class="user-info" v-show="!collapsed">
           <span class="user-name">Administrator</span>
-          <span class="user-email">admin@autoparts.com</span>
+          <span class="user-email">admin@company.com</span>
         </div>
       </div>
     </aside>
+
+    <!-- Botón de colapsar: fuera del sidebar, así el overflow:hidden
+         del sidebar no lo recorta -->
+    <button
+      class="collapse-btn"
+      :class="{ collapsed }"
+      @click="toggleSidebar"
+      :aria-label="collapsed ? 'Expand' : 'Collapse'"
+    >
+      <i :class="`ti ti-chevron-${collapsed ? 'right' : 'left'}`" aria-hidden="true" />
+    </button>
 
     <!-- Main -->
     <div class="main-wrap">
@@ -79,6 +113,7 @@ const navItems = [
   display: flex;
   min-height: 100vh;
   background: var(--bg);
+  position: relative;
 }
 
 /* ── Sidebar ───────────────────────────────────────────── */
@@ -90,6 +125,12 @@ const navItems = [
   display: flex;
   flex-direction: column;
   padding: 0;
+  transition: width 0.2s ease;
+  overflow: hidden;
+}
+
+.sidebar.collapsed {
+  width: 68px;
 }
 
 .sidebar-logo {
@@ -110,6 +151,7 @@ const navItems = [
   align-items: center;
   justify-content: center;
   font-size: 18px;
+  flex-shrink: 0;
 }
 
 .logo-text {
@@ -117,6 +159,36 @@ const navItems = [
   font-weight: 600;
   color: var(--text-h);
   letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+/* ── Botón de colapsar (fuera del sidebar) ────────────── */
+.collapse-btn {
+  position: absolute;
+  top: 16px;
+  left: 228px; /* 240px (ancho sidebar) - 12px, centrado sobre el borde */
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--code-bg);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  z-index: 10;
+  transition: left 0.2s ease, background 0.15s, color 0.15s;
+}
+
+.collapse-btn.collapsed {
+  left: 56px; /* 68px (ancho colapsado) - 12px */
+}
+
+.collapse-btn:hover {
+  background: var(--accent-bg);
+  color: var(--accent);
 }
 
 .nav-section-label {
@@ -126,6 +198,7 @@ const navItems = [
   color: var(--text);
   padding: 20px 20px 8px;
   margin: 0;
+  white-space: nowrap;
 }
 
 .sidebar-nav {
@@ -146,9 +219,15 @@ const navItems = [
   text-decoration: none;
   font-size: 0.88rem;
   transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
 }
 
-.nav-item i { font-size: 18px; }
+.sidebar.collapsed .nav-item {
+  justify-content: center;
+  padding: 9px;
+}
+
+.nav-item i { font-size: 18px; flex-shrink: 0; }
 
 .nav-item:hover {
   background: var(--accent-bg);
@@ -169,6 +248,11 @@ const navItems = [
   padding: 16px 20px;
   border-top: 1px solid var(--border);
   margin-top: auto;
+}
+
+.sidebar.collapsed .sidebar-footer {
+  justify-content: center;
+  padding: 16px 0;
 }
 
 .user-avatar {
@@ -269,5 +353,6 @@ const navItems = [
 /* ── Responsive ────────────────────────────────────────── */
 @media (max-width: 768px) {
   .sidebar { display: none; }
+  .collapse-btn { display: none; }
 }
 </style>
