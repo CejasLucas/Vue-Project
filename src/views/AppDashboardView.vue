@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { 
-  ref, 
+import {
+  ref,
   nextTick,
-  computed, 
+  computed,
   onUnmounted,
-  onMounted 
+  onMounted
 } from "vue";
 
-import { 
-  Line, 
+import {
+  Line,
   Doughnut,
   Bar
 } from "vue-chartjs";
@@ -40,29 +40,16 @@ ChartJS.register(
   Filler
 );
 
-import { productApi } from "../api/ProductApi";
-import { categoryApi } from "../api/CategoryApi";
-import { supplierApi } from "../api/SupplierApi";
-import { purchaseApi } from "../api/PurchaseApi";
-import { purchaseItemApi } from "../api/PurchaseItemApi";
-
-import type { Product } from "../types/product";
-import type { Category } from "../types/category";
-import type { Supplier } from "../types/supplier";
-import type { Purchase } from "../types/purchase";
-import type { PurchaseItem } from "../types/purchaseItem";
+import { dashboardApi } from "../api/DashBoardApi";
+import type { DashboardSummaryDTO } from "../types/dashboard";
 
 
-const loading       = ref(true);
+const loading      = ref(true);
 const lineChartRef = ref();
 const donutChartRef = ref();
-const barChartRef = ref();
+const barChartRef  = ref();
 
-const products      = ref<Product[]>([]);
-const categories    = ref<Category[]>([]);
-const suppliers     = ref<Supplier[]>([]);
-const purchases     = ref<Purchase[]>([]);
-const purchaseItems = ref<PurchaseItem[]>([]);
+const dashboard = ref<DashboardSummaryDTO | null>(null);
 
 
 function resizeAllCharts() {
@@ -78,19 +65,8 @@ function resizeAllCharts() {
 onMounted(async () => {
   window.addEventListener("sidebar-resized", resizeAllCharts);
 
-  const [p, c, s, pu, pi] = await Promise.all([
-    productApi.getAll(),
-    categoryApi.getAll(),
-    supplierApi.getAll(),
-    purchaseApi.getAll(),
-    purchaseItemApi.getAll(),
-  ]);
-
-  products.value = p.data;
-  categories.value = c.data;
-  suppliers.value = s.data;
-  purchases.value = pu.data;
-  purchaseItems.value = pi.data;
+  const { data } = await dashboardApi.getDashboard();
+  dashboard.value = data;
 
   loading.value = false;
 
@@ -102,69 +78,61 @@ onUnmounted(() => {
 });
 
 // ── Cards ───────────────────────────────────────────────────────────
-const totalSpent = computed(() =>
-  purchases.value.reduce((acc, p) => acc + p.total_amount, 0)
-);
+const cards = computed(() => {
+  const counts = dashboard.value?.counts;
 
-const lowStockProducts = computed(() =>
-  products.value.filter((p) => p.current_stock <= p.minimum_stock)
-);
-
-const cards = computed(() => [
-  {
-    label: "Purchases",
-    value: purchases.value.length,
-    sub: "Historical total",
-    icon: "shopping-cart",
-    accent: "#378ADD",
-    iconBg: "rgba(55,138,221,.15)",
-  },
-  {
-    label: "Total spent",
-    value: `$${totalSpent.value.toLocaleString("en-US")}`,
-    sub: "Accumulated",
-    icon: "currency-dollar",
-    accent: "#0891B2",
-    iconBg: "rgba(8,145,178,.15)",
-  },
-  {
-    label: "Products",
-    value: products.value.length,
-    sub: "In catalog",
-    icon: "box",
-    accent: "#7C3AED",
-    iconBg: "rgba(124,58,237,.15)",
-  },
-  {
-    label: "Suppliers",
-    value: suppliers.value.length,
-    sub: "Registered",
-    icon: "truck",
-    accent: "#6D28D9",
-    iconBg: "rgba(109,40,217,.15)",
-  },
-  {
-    label: "Low stock",
-    value: lowStockProducts.value.length,
-    sub: "Below minimum",
-    icon: "alert-triangle",
-    accent: "#A855F7",
-    iconBg: "rgba(168,85,247,.15)",
-  },
-]);
+  return [
+    {
+      label: "Suppliers",
+      value: counts?.amount_suppliers ?? 0,
+      sub: "Registered",
+      icon: "truck",
+      accent: "#6D28D9",
+      iconBg: "rgba(109,40,217,.15)",
+    },
+    {
+      label: "Products",
+      value: counts?.amount_products ?? 0,
+      sub: "In catalog",
+      icon: "box",
+      accent: "#7C3AED",
+      iconBg: "rgba(124,58,237,.15)",
+    },
+    {
+      label: "Low stock",
+      value: counts?.low_stock_count ?? 0,
+      sub: "Below minimum",
+      icon: "alert-triangle",
+      accent: "#A855F7",
+      iconBg: "rgba(168,85,247,.15)",
+    },
+    {
+      label: "Purchases",
+      value: counts?.amount_purchases ?? 0,
+      sub: "Historical total",
+      icon: "shopping-cart",
+      accent: "#378ADD",
+      iconBg: "rgba(55,138,221,.15)",
+    },
+    {
+      label: "Total spent",
+      value: `$${(counts?.total_pending ?? 0).toLocaleString("en-US")}`,
+      sub: "Accumulated",
+      icon: "currency-dollar",
+      accent: "#0891B2",
+      iconBg: "rgba(8,145,178,.15)",
+    },
+  ];
+});
 
 // ── Line graph ─────────────────────────────────────────────────
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONTH_KEYS = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"] as const;
 
 const spendingByMonth = computed(() => {
-  const currentYear = new Date().getFullYear();
-  const totals = Array(12).fill(0);
-  purchases.value.forEach((p) => {
-    const date = new Date(p.purchase_date);
-    if (date.getFullYear() === currentYear)
-      totals[date.getMonth()] += p.total_amount;
-  });
-  return totals;
+  const expenses = dashboard.value?.expenses_per_month;
+  if (!expenses) return Array(12).fill(0);
+  return MONTH_KEYS.map((key) => expenses[key]);
 });
 
 const lineChartData = computed(() => ({
@@ -224,26 +192,13 @@ const DONA_COLORS = [
 ];
 
 const donutData = computed(() => {
-  const prodCat = new Map(products.value.map((p) => [p.id, p.category_id]));
-  const catName = new Map(categories.value.map((c) => [c.id, c.name]));
-
-  const totals: Record<string, number> = {};
-  purchaseItems.value.forEach((item) => {
-    const catId = prodCat.get(item.product_id);
-    if (!catId) return;
-    const name = catName.get(catId) ?? "Other";
-    totals[name] = (totals[name] ?? 0) + item.quantity * item.unit_price;
-  });
-
-  const sorted = Object.entries(totals)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
+  const spending = dashboard.value?.spending_by_category ?? [];
 
   return {
-    labels: sorted.map(([k]) => k),
+    labels: spending.map((s) => s.category),
     datasets: [
       {
-        data: sorted.map(([, v]) => v),
+        data: spending.map((s) => s.total),
         backgroundColor: DONA_COLORS,
         borderWidth: 0,
         hoverOffset: 6,
@@ -272,33 +227,22 @@ const donutOptions: ChartOptions<"doughnut"> = {
 };
 
 // ── Top Suppliers (bar chart) ─────────────────────────────────────
-const supplierMap = computed(() =>
-  new Map(suppliers.value.map((s) => [s.id, s.name]))
-);
+const barChartData = computed(() => {
+  const topSuppliers = dashboard.value?.top_suppliers ?? [];
 
-const topSuppliers = computed(() => {
-  const totals: Record<string, number> = {};
-  purchases.value.forEach((p) => {
-    const name = supplierMap.value.get(p.supplier_id) ?? "Other";
-    totals[name] = (totals[name] ?? 0) + p.total_amount;
-  });
-  return Object.entries(totals)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
+  return {
+    labels: topSuppliers.map((s) => s.supplier),
+    datasets: [
+      {
+        label: "Spend",
+        data: topSuppliers.map((s) => s.total),
+        backgroundColor: "#0891B2",
+        borderRadius: 4,
+        barThickness: 12,
+      },
+    ],
+  };
 });
-
-const barChartData = computed(() => ({
-  labels: topSuppliers.value.map(([name]) => name),
-  datasets: [
-    {
-      label: "Spend",
-      data: topSuppliers.value.map(([, v]) => v),
-      backgroundColor: "#0891B2",
-      borderRadius: 4,
-      barThickness: 12,
-    },
-  ],
-}));
 
 const barChartOptions: ChartOptions<"bar"> = {
   indexAxis: "y",
@@ -332,11 +276,7 @@ const barChartOptions: ChartOptions<"bar"> = {
 };
 
 // ── Últimas compras ──────────────────────────────────────────────────
-const lastPurchases = computed(() =>
-  [...purchases.value]
-    .sort((a, b) => new Date(b.purchase_date).getTime() - new Date(a.purchase_date).getTime())
-    .slice(0, 12)
-);
+const lastPurchases = computed(() => dashboard.value?.recent_purchases ?? []);
 
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString("en-US", {
@@ -347,11 +287,10 @@ function formatDate(d: string) {
 }
 
 // ── Stock bajo ───────────────────────────────────────────────────────
-const lowStock = computed(() =>
-  lowStockProducts.value
-    .sort((a, b) => a.current_stock - b.current_stock)
-    .slice(0, 10)
-);
+const lowStock = computed(() => dashboard.value?.low_stock_products ?? []);
+
+// ── Año mostrado en el badge del gráfico de líneas ────────────────────
+const currentYear = computed(() => dashboard.value?.year ?? new Date().getFullYear());
 </script>
 
 
@@ -391,7 +330,7 @@ const lowStock = computed(() =>
       <div class="chart-card chart-card-line">
         <div class="chart-header">
           <span class="chart-title">Spending by Month</span>
-          <span class="chart-badge">{{ new Date().getFullYear() }}</span>
+          <span class="chart-badge">{{ currentYear }}</span>
         </div>
         <div class="chart-body">
           <div v-if="loading" class="skel chart-skel" />
@@ -493,7 +432,7 @@ const lowStock = computed(() =>
             <tbody>
               <tr v-for="p in lastPurchases" :key="p.id">
                 <td class="mono">#{{ p.id.slice(-6).toUpperCase() }}</td>
-                <td class="truncate">{{ supplierMap.get(p.supplier_id) ?? "—" }}</td>
+                <td class="truncate">{{ p.supplier }}</td>
                 <td>{{ formatDate(p.purchase_date) }}</td>
                 <td class="text-center">
                   <span
