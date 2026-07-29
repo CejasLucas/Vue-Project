@@ -1,16 +1,25 @@
-export interface ExpensesPerMonthDTO {
-  jan: number;
-  feb: number;
-  mar: number;
-  apr: number;
-  may: number;
-  jun: number;
-  jul: number;
-  aug: number;
-  sep: number;
-  oct: number;
-  nov: number;
-  dec: number;
+export interface DashboardCountsDTO {
+  amount_purchases: number;
+  amount_products: number;
+  amount_suppliers: number;
+  low_stock_count: number;
+
+  total_spent: number;
+}
+
+export interface DashboardKPIDTO {
+  average_purchase: number;
+  largest_purchase: number;
+
+  purchases_this_month: number;
+  spending_this_month: number;
+
+  monthly_growth_percentage: number;
+}
+
+export interface MonthlyExpenseDTO {
+  month: string;
+  total: number;
 }
 
 export interface CategorySpendingDTO {
@@ -23,35 +32,44 @@ export interface SupplierSpendingDTO {
   total: number;
 }
 
+export interface TopProductDTO {
+  product: string;
+  quantity: number;
+}
+
 export interface RecentPurchaseDTO {
-  id: string; // UUID
+  id: string;
   supplier: string;
-  purchase_date: string; 
+  purchase_date: string;
   status: string;
   total_amount: number;
 }
 
 export interface LowStockProductDTO {
-  id: string; // UUID
+  id: string;
   name: string;
   current_stock: number;
   minimum_stock: number;
-}
-
-export interface DashboardCountsDTO {
-  amount_purchases: number;
-  amount_products: number;
-  amount_suppliers: number;
-  low_stock_count: number;
-  total_pending: number;
+  missing_stock: number;
 }
 
 export interface DashboardSummaryDTO {
+
   year: number;
+
   counts: DashboardCountsDTO;
-  expenses_per_month: ExpensesPerMonthDTO;
+
+  kpis: DashboardKPIDTO;
+
+  monthly_expenses: MonthlyExpenseDTO[];
+
   spending_by_category: CategorySpendingDTO[];
+
   top_suppliers: SupplierSpendingDTO[];
+
+  top_products: TopProductDTO[];
+
   recent_purchases: RecentPurchaseDTO[];
+
   low_stock_products: LowStockProductDTO[];
 }

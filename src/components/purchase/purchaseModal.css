@@ -12,7 +12,7 @@
 
   padding: 20px;
 
-  background: rgba(24, 23, 39, 0.61);
+  background: rgba(0, 0, 0, 0.55);   
   backdrop-filter: blur(6px);
 }
 
@@ -28,7 +28,7 @@
 
   padding: 22px;
 
-  background: #08080f9c;
+  background: var(--code-bg);   /* ✅ igual que .modal */
   border: 1px solid var(--border);
   border-radius: 18px;
 }
