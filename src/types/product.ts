@@ -19,3 +19,21 @@ export interface Product {
 
     category_id: string;
 }
+
+export interface ProductItems {
+    id: string;
+
+    name: string;
+    
+    unit: string;
+    
+    unit_price: number;
+    
+    category_id: string;
+    
+    category: string;
+    
+    brand_id: string;
+    
+    brand: string;
+}

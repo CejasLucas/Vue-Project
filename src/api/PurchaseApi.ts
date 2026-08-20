@@ -16,4 +16,12 @@ export const purchaseApi = {
     getDetails(id: string) {
         return http.get<PurchaseDetailDTO>(`/purchases/details/${id}`);
     },
+    
+    create(element: object) {
+        return http.post<PurchaseDetailDTO>(`/purchases/details/`, element);
+    },
+    
+    update(id: string, element: object) {
+        return http.put<PurchaseDetailDTO>(`/purchases/details/${id}`, element);
+    },
 };

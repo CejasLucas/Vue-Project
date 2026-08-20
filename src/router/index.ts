@@ -2,17 +2,17 @@ import { createRouter, createWebHistory } from "vue-router";
 
 import MainLayout from "../components/layout/MainLayout.vue";
 
-import DashboardView from "../views/AppDashboardView.vue";
+import DashboardView from "../views/dashboard/AppDashboardView.vue";
 
-import BrandsView from "../views/BrandsView.vue";
+import BrandsView from "../views/brand/BrandsView.vue";
 
-import CategoryView from "../views/CategoryView.vue"; 
+import CategoryView from "../views/category/CategoryView.vue"; 
 
-import ProductView from "../views/ProductView.vue";
+import ProductView from "../views/product/ProductView.vue";
 
-import SupplierView from "../views/SupplierView.vue";
+import SupplierView from "../views/supplier/SupplierView.vue";
 
-import PurchaseView from "../views/PurchaseView.vue";
+import PurchaseView from "../views/purchase/PurchaseView.vue";
 
 
 const router = createRouter({

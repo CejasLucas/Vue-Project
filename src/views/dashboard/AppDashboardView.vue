@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from "vue";
 
-import { dashboardApi } from "../api/DashBoardApi";
+import { dashboardApi } from "../../api/DashBoardApi";
 
-import type { DashboardSummaryDTO } from "../types/dashboard";
+import type { DashboardSummaryDTO } from "../../types/dashboard";
 
-import DashboardCards from "../components/dashboard/DashboardCards.vue";
-import MonthlySpendingChart from "../components/dashboard/MonthlySpendingChart.vue";
-import SpendingCategoryChart from "../components/dashboard/SpendingCategoryChart.vue";
-import TopSuppliersChart from "../components/dashboard/TopSuppliersChart.vue";
-import TopProductsChart from "../components/dashboard/TopProductsChart.vue";
-import RecentPurchasesTable from "../components/dashboard/RecentPurchasesTable.vue";
-import LowStockTable from "../components/dashboard/LowStockTable.vue";
+import DashboardCards from "../dashboard/DashboardCards.vue";
+import MonthlySpendingChart from "../dashboard/MonthlySpendingChart.vue";
+import SpendingCategoryChart from "../dashboard/SpendingCategoryChart.vue";
+import TopSuppliersChart from "../dashboard/TopSuppliersChart.vue";
+import TopProductsChart from "../dashboard/TopProductsChart.vue";
+import RecentPurchasesTable from "../dashboard/RecentPurchasesTable.vue";
+import LowStockTable from "../dashboard/LowStockTable.vue";
 
 const loading = ref(true);
 const dashboard = ref<DashboardSummaryDTO | null>(null);

@@ -20,8 +20,10 @@ function formatAmount(n: number) {
 }
 
 function statusLabel(status: string) {
-  if (status === "confirmed") return "Confirmed";
-  if (status === "pending") return "Pending";
+  const st = (status || "").toLowerCase();
+  if (st === "confirmed" || st === "approved") return "Confirmed";
+  if (st === "pending") return "Pending";
+  if (st === "rejected") return "Rejected";
   return status;
 }
 </script>
@@ -77,7 +79,7 @@ function statusLabel(status: string) {
             <span
               class="badge"
               :class="
-                props.purchase.status === 'confirmed'
+                props.purchase.status?.toLowerCase() === 'confirmed' || props.purchase.status?.toLowerCase() === 'approved'
                   ? 'badge-confirmed'
                   : 'badge-pending'
               "
@@ -97,22 +99,22 @@ function statusLabel(status: string) {
 
           <div class="purchase-supplier-block">
             <span class="purchase-field-label">Supplier</span>
-            <strong>{{ props.purchase.supplier.name }}</strong>
-            <small>NIF: {{ props.purchase.supplier.tax_id }}</small>
+            <strong>{{ props.purchase.supplier?.name || '—' }}</strong>
+            <small>NIF: {{ props.purchase.supplier?.tax_id || '—' }}</small>
           </div>
 
           <div class="purchase-supplier-block">
             <span class="purchase-field-label">Contact</span>
-            <strong>{{ props.purchase.supplier.email }}</strong>
-            <small>{{ props.purchase.supplier.phone }}</small>
+            <strong>{{ props.purchase.supplier?.email || '—' }}</strong>
+            <small>{{ props.purchase.supplier?.phone || '—' }}</small>
           </div>
 
           <div class="purchase-supplier-block">
             <span class="purchase-field-label">Address</span>
-            <strong>{{ props.purchase.supplier.address }}</strong>
+            <strong>{{ props.purchase.supplier?.address || '—' }}</strong>
             <small>
-              {{ props.purchase.supplier.locality }},
-              {{ props.purchase.supplier.nationality }}
+              {{ props.purchase.supplier?.locality || '' }},
+              {{ props.purchase.supplier?.nationality || '' }}
             </small>
           </div>
 
@@ -140,11 +142,11 @@ function statusLabel(status: string) {
                 :key="item.product.product_id"
               >
                 <td>{{ item.product.name }}</td>
-                <td>{{ item.product.category }}</td>
-                <td>{{ item.product.brand }}</td>
+                <td>{{ item.product.category}}</td>
+                <td>{{ item.product.brand}}</td>
                 <td>{{ item.quantity }}</td>
                 <td>{{ formatAmount(item.unit_price) }}</td>
-                <td>{{ formatAmount(item.subtotal) }}</td>
+                <td>{{ formatAmount(item.subtotal || (item.quantity * item.unit_price)) }}</td>
               </tr>
 
             </tbody>
@@ -167,7 +169,6 @@ function statusLabel(status: string) {
 </template>
 
 <style scoped>
-@import url("./purchaseModal.css");
-@import url("./purchaseDetailsModal.css");
-@import url("../../assets/styles/badge.css");
+@import url("./purchaseModalView.css");
+@import url("../../styles/badge.css");
 </style>

@@ -1,10 +1,15 @@
 import { http } from "./AppHTTP";
 
 import type { Product } from "../types/product";
+import type { ProductItems } from "../types/product";
 
 export const productApi = {
     getAll() {
         return http.get<Product[]>("/products");
+    },
+
+    getAllItems() {
+        return http.get<ProductItems[]>("/products/items");  
     },
 
     getById(id: string) {
