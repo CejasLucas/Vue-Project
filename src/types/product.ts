@@ -20,7 +20,7 @@ export interface Product {
     category_id: string;
 }
 
-export interface ProductItems {
+export interface ProductItem {
     id: string;
 
     name: string;

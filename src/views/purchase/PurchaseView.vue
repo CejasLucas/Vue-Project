@@ -18,6 +18,10 @@ const showDetails = ref(false);
 const showFormModal = ref(false);
 const selectedPurchaseForEdit = ref<PurchaseDetailDTO | null>(null);
 
+// Estados para el borrado
+const deleting = ref(false);
+const deleteTarget = ref<Purchase | null>(null);
+
 const columns: DataTableColumn[] = [
   { key: "id", label: "PURCHASE ID", width: "100px" },
   { key: "purchase_date", label: "DATE", width: "90px" },
@@ -39,7 +43,7 @@ async function fetchPurchases() {
   }
 }
 
-// Visualizar detalles de la compra / presupuesto
+// Visualizar detalles de la compra
 async function openDetails(purchase: Purchase) {
   const response = await purchaseApi.getDetails(purchase.id);
   purchaseDetail.value = response.data;
@@ -51,7 +55,7 @@ function closeDetails() {
   purchaseDetail.value = null;
 }
 
-// Abrir modal de edición / modificación
+// Abrir modal de edición
 async function openEdit(purchase: Purchase) {
   const response = await purchaseApi.getDetails(purchase.id);
   selectedPurchaseForEdit.value = response.data;
@@ -61,6 +65,24 @@ async function openEdit(purchase: Purchase) {
 function closeForm() {
   showFormModal.value = false;
   selectedPurchaseForEdit.value = null;
+}
+
+// Funciones de borrado
+function confirmDelete(purchase: Purchase) {
+  deleteTarget.value = purchase;
+}
+
+async function doDelete() {
+  if (!deleteTarget.value) return;
+
+  deleting.value = true;
+  try {
+    await purchaseApi.delete(deleteTarget.value.id);
+    await fetchPurchases();
+    deleteTarget.value = null;
+  } finally {
+    deleting.value = false;
+  }
 }
 
 function formatDate(d: string) {
@@ -94,11 +116,10 @@ function statusLabel(status: string) {
     empty-icon="ti-shopping-cart"
     empty-text="No purchases found."
     :search-keys="['id', 'status']"
-    :editable="true"
-    :deletable="false"
     @add="showFormModal = true"
     @view="openDetails"
     @edit="openEdit"
+    @delete="confirmDelete"
   >
     <template #cell-id="{ item }">
       <div class="name">
@@ -142,6 +163,34 @@ function statusLabel(status: string) {
     @close="closeForm"
     @saved="fetchPurchases"
   />
+
+  <!-- Modal Delete -->
+  <Teleport to="body">
+    <div v-if="deleteTarget" class="overlay" @click.self="deleteTarget = null">
+      <div class="modal modal--sm">
+        <div class="modal-header">
+          <h2 class="modal-title">Delete purchase?</h2>
+        </div>
+
+        <div class="modal-body">
+          <p class="confirm-text">
+            This action is permanent and cannot be undone.
+          </p>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-ghost" @click="deleteTarget = null">
+            Cancel
+          </button>
+
+          <button class="btn-danger" @click="doDelete" :disabled="deleting">
+            <i v-if="deleting" class="ti ti-loader-2 spin" />
+            {{ deleting ? "Deleting..." : "Yes, delete" }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>

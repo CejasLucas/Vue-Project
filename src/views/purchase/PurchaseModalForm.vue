@@ -6,7 +6,7 @@ import { productApi } from "../../api/ProductApi";
 import { supplierApi } from "../../api/SupplierApi";
 
 import type { PurchaseDetailDTO } from "../../types/purchaseDetails";
-import type { ProductItems } from "../../types/product";
+import type { ProductItem } from "../../types/product";
 
 /* ── Types ─────────────────────────────────────────── */
 
@@ -46,7 +46,7 @@ const isEdit = computed(() => !!props.purchase?.id);
 const saving = ref(false);
 const loadingOptions = ref(true);
 
-const products = ref<ProductItems[]>([]);
+const products = ref<ProductItem[]>([]);
 const suppliers = ref<SupplierOption[]>([]);
 
 const form = reactive({

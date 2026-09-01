@@ -1,7 +1,7 @@
 import { http } from "./AppHTTP";
 
 import type { Product } from "../types/product";
-import type { ProductItems } from "../types/product";
+import type { ProductItem } from "../types/product";
 
 export const productApi = {
     getAll() {
@@ -9,17 +9,18 @@ export const productApi = {
     },
 
     getAllItems() {
-        return http.get<ProductItems[]>("/products/items");  
+        return http.get<ProductItem[]>("/products/items");  
     },
+    
+    getAllUnits() {
+        return http.get<{ value: string; label: string }[]>("/products/units");
+    },
+
 
     getById(id: string) {
         return http.get<Product>(`/products/${id}`);
     },
-
-    getUnits() {
-        return http.get<{ value: string; label: string }[]>("/products/units");
-    },
-
+    
     create(data: Omit<Product, "id">) {
         return http.post<Product>("/products", data);
     },

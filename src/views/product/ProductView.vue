@@ -75,7 +75,7 @@ async function loadProducts() {
 
 async function loadUnits() {
   try {
-    const response = await productApi.getUnits();
+    const response = await productApi.getAllUnits();
     units.value = response.data;
   } catch (error) {
     console.error("Failed to load units:", error);
